@@ -49,6 +49,9 @@
   #exit:focus-visible,#feed:focus-visible,.mat:focus-visible,#reset:focus-visible,.ov button:focus-visible,.ov select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   #toast{min-height:1.4em;margin:0;color:var(--muted);font-size:.84rem;line-height:1.6}
 
+  .goal{display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--glow) 12%,var(--surface));border:1px solid var(--glow);border-radius:14px;padding:10px 14px}
+  .goal b{font-size:1rem;font-weight:900;color:var(--glow)}
+  .goal span{font-size:.8rem;color:var(--muted)}
   .shelf{display:block;width:100%;height:auto;border-bottom:3px solid var(--line)}
   .bub1{animation:rise 2.4s ease-in infinite}.bub2{animation:rise 3s ease-in .8s infinite}.bub3{animation:rise 2.7s ease-in 1.5s infinite}
   @keyframes rise{0%{opacity:0;transform:translateY(0)}20%{opacity:.9}100%{opacity:0;transform:translateY(-16px)}}
@@ -126,6 +129,8 @@
     <div class="exitSlot"><button id="exit" type="button">✕ خروج</button></div>
   </header>
   <p id="toast">سه تا گربهٔ دانشمند منتظر مواد کیک خیس‌اند.</p>
+
+  <div class="goal"><b>هدف: یک کیک خیس</b><span>دستور پخت: آب مقطر + دو ماده دیگر</span></div>
 
   <svg class="shelf" viewBox="0 0 400 64" aria-hidden="true">
     <g stroke="var(--line)" stroke-width="2" fill="none">
@@ -307,7 +312,7 @@
     liq.setAttribute('y',top); liq.setAttribute('height',h); liq.setAttribute('fill',lastColor);
     $('flask').classList.toggle('mixing',n>=NEED);
     $('feed').disabled=n<NEED;
-    $('need').textContent=n>=NEED?'فرمول کامل شد، ترکیبش کن.':(n===0?'هنوز چیزی تو ظرف نیست.':'هنوز '+fa(NEED-n)+' ماده کم داری.');
+    $('need').textContent=n>=NEED?(sel[0]?'فرمول کامل شد، ترکیبش کن.':'کیک خیس بدون آب مقطر؟ خشک می‌شه.'):(n===0?'هنوز چیزی تو ظرف نیست.':'هنوز '+fa(NEED-n)+' ماده کم داری.');
   }
   function clearMix(){ sel={}; var bs=matsEl.children; for(var i=0;i<bs.length;i++){bs[i].classList.remove('on');bs[i].setAttribute('aria-pressed','false')} updateMix() }
   $('reset').addEventListener('click',clearMix);
@@ -419,6 +424,12 @@
 
   $('feed').addEventListener('click',function(){
     if(count()<NEED) return;
+    if(!sel[0]){
+      var j=Math.floor(Math.random()*3);
+      bubbles[j].textContent='این که خشکه! کیک خیس آب مقطر می‌خواد';
+      toast.textContent='هدف کیک خیسه. آب مقطر رو هم بریز تو ظرف.';
+      return;
+    }
     chosen=null; $('picked').textContent=''; $('ok').disabled=true;
     buildSelects(); buildChips(); $('pick').hidden=false;
   });
