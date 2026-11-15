@@ -1,0 +1,388 @@
+<!doctype html><html lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="https://telegram.org/js/telegram-web-app.js"></script></head><body>
+<title>گربهٔ لوس</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;900&display=swap">
+<style>
+  /* Layout: one stacked column — header, a playfield card that owns most of the screen, a status strip under it. */
+  :root{
+    /* single Gotham-night look on purpose: no light variant */
+    --bg:#0D0F18;
+    --surface:#161927;
+    --surface-2:#2A3052;
+    --fg:#ECEDF5;
+    --muted:#8E93AD;
+    --line:#2A2F47;
+    --cat:#8B90A6;
+    --cat-dark:#33448F;
+    --cat-ear:#F5C518;
+    --calm:#F5C518;
+    --font-ui:"Vazirmatn",system-ui,"Segoe UI",sans-serif;
+    color-scheme:dark;
+  }
+
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--fg);
+    font-family:var(--font-ui);
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{
+    direction:rtl;
+    min-height:100%;
+    box-sizing:border-box;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+    padding-block:18px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-width:680px;
+    margin-inline:auto;
+  }
+
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  h1{font-size:clamp(1.3rem,5vw,1.7rem);font-weight:900;margin:0;letter-spacing:-.01em;text-wrap:balance}
+  .sub{margin:0;color:var(--muted);font-size:.84rem;line-height:1.6}
+
+  #arena{
+    position:relative;
+    flex:1 1 auto;
+    min-height:340px;
+    border-radius:26px;
+    background:
+      radial-gradient(120% 90% at 50% 8%, var(--surface-2) 0%, var(--surface) 62%);
+    border:1px solid var(--line);
+    overflow:hidden;
+    touch-action:none;
+    cursor:crosshair;
+    min-width:0;
+  }
+  #arena::before{
+    content:"";position:absolute;top:-90px;left:50%;width:320px;height:320px;
+    transform:translateX(-50%);border-radius:50%;
+    background:radial-gradient(circle,color-mix(in srgb,var(--cat-ear) 24%,transparent),transparent 66%);
+    pointer-events:none;
+  }
+  #arena::after{
+    content:"";position:absolute;inset:auto 0 0 0;height:34%;
+    background:linear-gradient(to top,color-mix(in srgb,var(--line) 45%,transparent),transparent);
+    pointer-events:none;
+  }
+
+  #cat{
+    position:absolute;top:0;left:0;
+    width:118px;
+    will-change:transform;
+    transform:translate(-50%,-50%);
+    transition:transform .34s cubic-bezier(.22,1.2,.36,1);
+    pointer-events:none;
+  }
+  #cat.settled{transition:transform .9s cubic-bezier(.3,1,.4,1)}
+  #catSvg{display:block;width:100%;height:auto;overflow:visible}
+  #tail{transform-origin:86px 112px;animation:wag 2.6s ease-in-out infinite}
+  @keyframes wag{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(13deg)}}
+  #eyelids{transform-origin:center 50px;transform:scaleY(0);transition:transform .09s}
+  #cat.blink #eyelids{transform:scaleY(1)}
+  #blush{opacity:0;transition:opacity .4s}
+  #cat.happy #blush{opacity:1}
+  #cat.happy #tail{animation-duration:.9s}
+
+  .bubble{
+    position:absolute;
+    bottom:100%;
+    right:50%;
+    transform:translateX(50%) translateY(-8px);
+    background:var(--fg);
+    color:var(--bg);
+    font-size:.82rem;
+    font-weight:600;
+    padding:7px 13px;
+    border-radius:14px;
+    white-space:nowrap;
+    line-height:1.4;
+  }
+  .bubble::after{
+    content:"";position:absolute;top:100%;right:50%;transform:translateX(50%);
+    border:7px solid transparent;border-top-color:var(--fg);
+  }
+
+  #meterWrap{
+    position:absolute;bottom:-18px;right:50%;transform:translateX(50%);
+    width:78px;height:7px;border-radius:99px;
+    background:color-mix(in srgb,var(--muted) 30%,transparent);
+    overflow:hidden;opacity:0;transition:opacity .25s;
+  }
+  #meterWrap.on{opacity:1}
+  #meter{height:100%;width:0%;background:var(--calm);border-radius:99px;transition:width .1s linear}
+
+  .heart{
+    position:absolute;font-size:20px;pointer-events:none;
+    animation:float 1.1s ease-out forwards;
+  }
+  @keyframes float{
+    0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}
+    100%{opacity:0;transform:translate(-50%,-160%) scale(1.25)}
+  }
+
+  #hint{
+    position:absolute;inset:auto 0 14px 0;text-align:center;
+    color:var(--muted);font-size:.8rem;padding-inline:16px;
+    pointer-events:none;transition:opacity .3s;
+  }
+
+  .strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stat{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:9px 14px;display:flex;gap:7px;align-items:baseline;
+  }
+  .stat b{font-size:1.05rem;font-weight:900;font-variant-numeric:tabular-nums}
+  .stat span{color:var(--muted);font-size:.78rem}
+  button{
+    font-family:inherit;font-size:.84rem;font-weight:600;
+    background:var(--fg);color:var(--bg);border:0;border-radius:14px;
+    padding:11px 18px;cursor:pointer;margin-inline-start:auto;
+  }
+  button:focus-visible{outline:3px solid var(--cat);outline-offset:2px}
+  button:active{transform:translateY(1px)}
+
+  @media (prefers-reduced-motion: reduce){
+    #cat,#cat.settled{transition-duration:.01ms}
+    #tail{animation:none}
+    .heart{animation-duration:.01ms}
+  }
+</style>
+
+<div id="app">
+  <header>
+    <h1>بت‌گربه</h1>
+    <p class="sub">هرچی تندتر بری، سریع‌تر تو تاریکی گم می‌شه.</p>
+  </header>
+
+  <div id="arena">
+    <div id="cat">
+      <div class="bubble" id="bubble">منو ناز کن!</div>
+      <svg id="catSvg" viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" aria-label="یک گربه">
+        <path d="M18,74 C6,100 6,120 10,136 L24,127 L36,136 L48,127 L60,136 L72,127 L84,136 L96,127 L110,136 C114,120 114,100 102,74 Z" fill="var(--cat-dark)"/>
+        <path id="tail" d="M86,112 C112,110 120,92 112,76 C108,68 98,68 96,76 C94,84 102,86 104,80"
+              fill="none" stroke="var(--cat)" stroke-width="11" stroke-linecap="round"/>
+        <path d="M22,128 C20,86 34,70 60,70 C86,70 100,86 98,128 Z" fill="var(--cat)"/>
+        <ellipse cx="38" cy="126" rx="13" ry="7" fill="var(--cat-dark)"/>
+        <ellipse cx="82" cy="126" rx="13" ry="7" fill="var(--cat-dark)"/>
+        <path d="M24,108 L96,108 L97,115 L23,115 Z" fill="var(--cat-ear)"/>
+        <rect x="54" y="106.5" width="12" height="10" rx="2" fill="#C99A00"/>
+        <ellipse cx="60" cy="96.5" rx="14" ry="8.5" fill="var(--cat-ear)"/>
+        <path d="M49,96 C52,92 55,93 56,96 L58,92 L60,95 L62,92 L64,96 C65,93 68,92 71,96 C68,96 66,99 65,101 C63,99 61,99 60,102 C59,99 57,99 55,101 C54,99 52,96 49,96 Z" fill="#12141C"/>
+        <path d="M31,32 L34,0 L57,22 Z" fill="var(--cat-dark)"/>
+        <path d="M89,32 L86,0 L63,22 Z" fill="var(--cat-dark)"/>
+        <circle cx="60" cy="50" r="33" fill="var(--cat-dark)"/>
+        <ellipse cx="60" cy="65" rx="21" ry="14" fill="var(--cat)"/>
+        <g id="blush">
+          <ellipse cx="45" cy="66" rx="5" ry="3" fill="#E88AA0"/>
+          <ellipse cx="75" cy="66" rx="5" ry="3" fill="#E88AA0"/>
+        </g>
+        <g id="eyes">
+          <circle cx="47" cy="50" r="6.5" fill="#fff"/>
+          <circle cx="73" cy="50" r="6.5" fill="#fff"/>
+          <circle id="p1" cx="48.6" cy="48" r="2.6" fill="#12141C"/>
+          <circle id="p2" cx="74.6" cy="48" r="2.6" fill="#12141C"/>
+        </g>
+        <g id="eyelids">
+          <rect x="38" y="42" width="18" height="9" rx="4.5" fill="var(--cat-dark)"/>
+          <rect x="64" y="42" width="18" height="9" rx="4.5" fill="var(--cat-dark)"/>
+        </g>
+        <path d="M56,61 L64,61 L60,66 Z" fill="#1B1D29"/>
+        <path d="M60,66 C60,71 54,71 52,68 M60,66 C60,71 66,71 68,68"
+              fill="none" stroke="#1B1D29" stroke-width="2.2" stroke-linecap="round"/>
+        <g stroke="#ECEDF5" stroke-width="1.8" stroke-linecap="round" opacity=".7">
+          <path d="M40,63 L20,58"/><path d="M40,68 L20,71"/>
+          <path d="M80,63 L100,58"/><path d="M80,68 L100,71"/>
+        </g>
+      </svg>
+      <div id="meterWrap"><div id="meter"></div></div>
+    </div>
+    <p id="hint">با موس (یا انگشتت) بهش نزدیک شو</p>
+  </div>
+
+  <div class="strip">
+    <div class="stat"><b id="sAtt">۰</b><span>بار فرار کرد</span></div>
+    <div class="stat"><b id="sPet">۰</b><span>بار نازش کردی</span></div>
+    <button id="reset" type="button">از اول</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var arena=document.getElementById('arena'),
+      cat=document.getElementById('cat'),
+      bubble=document.getElementById('bubble'),
+      meterWrap=document.getElementById('meterWrap'),
+      meter=document.getElementById('meter'),
+      hint=document.getElementById('hint'),
+      sAtt=document.getElementById('sAtt'),
+      sPet=document.getElementById('sPet'),
+      p1=document.getElementById('p1'),
+      p2=document.getElementById('p2');
+
+  var FLEE_R=96, PET_R=74, SLOW=0.26, COOL=380;
+
+  var S={x:0,y:0,att:0,pets:0,pet:0,happy:false,lastFlee:0};
+  var ptr={x:-999,y:-999,inside:false};
+  var lastMove=null, lastT=0;
+
+  var taunts=['من بتمنم.','عدالت ناز نمی‌شه.','گاتهام منتظرمه.','نوچ.','جوکر فرستادتت؟','تو سایه‌ها گم شدم.','بتمن بغل نمی‌ده.'];
+  var calm=['اوووم...','آلفرد نبینه...','فقط همین یه بار','آروم بیا...'];
+  var purr=['بت‌خرخر','به رابین نگو','حتی بتمن هم ناز می‌خواد','خرخرخرخر'];
+
+  function fa(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d]})}
+  function pick(a){return a[Math.floor(Math.random()*a.length)]}
+  function box(){return arena.getBoundingClientRect()}
+
+  function place(x,y,soft){
+    var b=box(), pad=66;
+    S.x=Math.max(pad,Math.min(b.width-pad,x));
+    S.y=Math.max(pad+26,Math.min(b.height-pad,y));
+    cat.classList.toggle('settled',!!soft);
+    cat.style.transform='translate(-50%,-50%) translate('+S.x+'px,'+S.y+'px)';
+  }
+
+  function say(t){bubble.textContent=t}
+
+  function flee(){
+    var now=performance.now();
+    if(now-S.lastFlee<COOL) return;
+    S.lastFlee=now;
+    S.att++; sAtt.textContent=fa(S.att);
+    S.pet=0; meter.style.width='0%'; meterWrap.classList.remove('on');
+
+    var b=box(), best=null, bd=-1;
+    for(var i=0;i<14;i++){
+      var cx=66+Math.random()*(b.width-132),
+          cy=92+Math.random()*(b.height-158),
+          d=Math.hypot(cx-ptr.x,cy-ptr.y)+Math.hypot(cx-S.x,cy-S.y)*0.35;
+      if(d>bd){bd=d;best={x:cx,y:cy}}
+    }
+    place(best.x,best.y,false);
+    say(pick(taunts));
+    if(S.att===3) hint.textContent='راهنمایی: خیلی آروم‌تر حرکت کن.';
+    if(S.att===8) hint.textContent='جدی می‌گم. انگار داری به یه گربهٔ واقعی نزدیک می‌شی.';
+  }
+
+  function petted(){
+    S.pets++; sPet.textContent=fa(S.pets);
+    S.happy=true; cat.classList.add('happy');
+    say(pick(purr));
+    hint.textContent='گرفتیش! ولی دوباره در می‌ره...';
+    for(var i=0;i<7;i++) heart(i*90);
+    setTimeout(function(){
+      S.happy=false; cat.classList.remove('happy');
+      S.pet=0; meter.style.width='0%'; meterWrap.classList.remove('on');
+      say('باز هم؟');
+      var b=box();
+      place(66+Math.random()*(b.width-132),92+Math.random()*(b.height-158),true);
+    },2600);
+  }
+
+  function heart(delay){
+    setTimeout(function(){
+      var h=document.createElement('div');
+      h.className='heart'; h.textContent='💛';
+      h.style.left=(S.x+(Math.random()*54-27))+'px';
+      h.style.top=(S.y-26)+'px';
+      arena.appendChild(h);
+      setTimeout(function(){h.remove()},1200);
+    },delay);
+  }
+
+  arena.addEventListener('pointermove',function(e){
+    var b=box();
+    ptr.x=e.clientX-b.left; ptr.y=e.clientY-b.top; ptr.inside=true;
+    var t=performance.now(), speed=0;
+    if(lastMove){
+      var dt=Math.max(8,t-lastT);
+      speed=Math.hypot(ptr.x-lastMove.x,ptr.y-lastMove.y)/dt;
+    }
+    lastMove={x:ptr.x,y:ptr.y}; lastT=t;
+
+    var d=Math.hypot(ptr.x-S.x,ptr.y-S.y);
+    if(S.happy){ if(d<PET_R && Math.random()<.14) heart(0); return; }
+
+    if(d<FLEE_R && speed>SLOW){ flee(); return; }
+
+    if(d<PET_R){
+      meterWrap.classList.add('on');
+      S.pet=Math.min(100,S.pet+2.6);
+      meter.style.width=S.pet+'%';
+      if(S.pet>=100){ petted(); return; }
+      if(bubble.textContent.indexOf('اوو')<0 && Math.random()<.2) say(pick(calm));
+    }
+  });
+
+  arena.addEventListener('pointerdown',function(e){
+    var b=box();
+    ptr.x=e.clientX-b.left; ptr.y=e.clientY-b.top;
+    if(S.happy) return;
+    if(Math.hypot(ptr.x-S.x,ptr.y-S.y)<FLEE_R){ flee(); }
+  });
+
+  arena.addEventListener('pointerleave',function(){ptr.inside=false;lastMove=null});
+
+  // slow decay when you back off
+  setInterval(function(){
+    if(S.happy) return;
+    var d=Math.hypot(ptr.x-S.x,ptr.y-S.y);
+    if(!ptr.inside||d>=PET_R){
+      if(S.pet>0){ S.pet=Math.max(0,S.pet-3.5); meter.style.width=S.pet+'%'; }
+      if(S.pet===0) meterWrap.classList.remove('on');
+    }
+  },140);
+
+  // eyes track the pointer
+  (function loop(){
+    var dx=ptr.x-S.x, dy=ptr.y-S.y, m=Math.hypot(dx,dy)||1,
+        ox=Math.max(-2.6,Math.min(2.6,dx/m*2.6)),
+        oy=Math.max(-2.2,Math.min(2.2,dy/m*2.2));
+    p1.setAttribute('cx',48.6+ox); p1.setAttribute('cy',48+oy);
+    p2.setAttribute('cx',74.6+ox); p2.setAttribute('cy',48+oy);
+    requestAnimationFrame(loop);
+  })();
+
+  // blinking
+  setInterval(function(){
+    if(Math.random()<.55){
+      cat.classList.add('blink');
+      setTimeout(function(){cat.classList.remove('blink')},130);
+    }
+  },2300);
+
+  document.getElementById('reset').addEventListener('click',function(){
+    S.att=0;S.pets=0;S.pet=0;S.happy=false;
+    cat.classList.remove('happy');
+    sAtt.textContent='۰';sPet.textContent='۰';
+    meter.style.width='0%';meterWrap.classList.remove('on');
+    say('منو ناز کن!');
+    hint.textContent='با موس (یا انگشتت) بهش نزدیک شو';
+    var b=box(); place(b.width/2,b.height/2+10,true);
+  });
+
+  function start(saved){
+    var b=box();
+    if(saved&&saved.att!=null){
+      S.att=saved.att;S.pets=saved.pets;
+      sAtt.textContent=fa(S.att);sPet.textContent=fa(S.pets);
+    }
+    place(b.width/2,b.height/2+10,true);
+  }
+
+  window.addEventListener('resize',function(){place(S.x,S.y,true)});
+
+  if(window.claude&&window.claude.hot){
+    window.claude.hot.snapshot(function(){return {att:S.att,pets:S.pets}});
+    window.claude.hot.ready?window.claude.hot.ready(start):start(window.claude.hot.data||{});
+  } else { start({}); }
+})();
+</script>
+<script>try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}</script></body></html>
