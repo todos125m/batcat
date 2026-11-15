@@ -105,6 +105,15 @@
   .ov button.main{background:var(--cake);border-color:var(--cake);color:#2B1220}
   .ovcat{width:120px}
 
+  .ovbox h2{margin:0;font-size:1.15rem;font-weight:900}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .chip{font-family:inherit;font-size:.82rem;font-weight:600;border-radius:99px;padding:8px 13px;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--fg)}
+  .ov .chip.on{background:var(--accent);border-color:var(--accent);color:#2B1A00}
+  #when{font-family:inherit;font-size:1rem;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box;color-scheme:dark;text-align:center}
+  #when:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  #picked{margin:0;min-height:1.6em;font-size:.9rem;color:var(--accent);font-weight:600}
+  .ov button:disabled{opacity:.4;cursor:not-allowed}
+
   @media (max-width:420px){ .bubble{font-size:.68rem} }
   @media (prefers-reduced-motion: reduce){
     .tail,.tear{animation:none}
@@ -136,6 +145,21 @@
   <div class="strip">
     <div class="stat"><b id="sCake">۰</b><span>کیک خیس دادی</span></div>
     <div class="stat"><b id="sHappy">۰</b><span>گربهٔ خوشحال الان</span></div>
+  </div>
+
+  <div class="ov" id="pick" hidden>
+    <div class="ovbox">
+      <h2>کیک خیس برای کدوم روز؟</h2>
+      <p style="font-size:.88rem;color:var(--muted)">گربه‌ها بدون تاریخ کیک نمی‌گیرن. یه روز انتخاب کن یا تاریخ بزن.</p>
+      <div class="chips" id="chips"></div>
+      <label for="when" style="font-size:.8rem;color:var(--muted)">یا خودت تاریخ بزن</label>
+      <input id="when" type="date">
+      <p id="picked"></p>
+      <div class="row">
+        <button class="main" id="ok" type="button" disabled>این روز، کیک بده</button>
+        <button id="cancel" type="button">بیخیال</button>
+      </div>
+    </div>
   </div>
 
   <div class="ov" id="ov" hidden>
@@ -216,6 +240,7 @@
 
   var cakeFly='<svg viewBox="0 0 64 56" class="fly-cake" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="26" width="52" height="24" rx="6" fill="var(--sponge)"/><path d="M4,26 C4,14 14,10 32,10 C50,10 60,14 60,26 C60,34 56,34 54,30 C52,38 47,38 46,30 C44,36 40,36 38,29 C36,38 30,38 28,29 C26,36 21,36 19,29 C17,38 12,38 10,30 C8,34 4,34 4,26 Z" fill="var(--cake)"/><circle cx="32" cy="8" r="4.5" fill="#E63D5E"/><path d="M12,54 C9,49 15,49 12,54 Z M32,56 C29,51 35,51 32,56 Z M52,54 C49,49 55,49 52,54 Z" fill="var(--tear)"/></svg>';
 
+  var toast=$('toast');
   var st={cakes:0,happy:[false,false,false],timers:[null,null,null],left:MAX};
   var stage=$('stage'), nodes=[], bubbles=[];
 
@@ -243,7 +268,7 @@
     f.appendChild(h); setTimeout(function(){h.remove()},1300);
   }
 
-  $('feed').addEventListener('click',function(){
+  function doFeed(label){
     var hungry=[]; st.happy.forEach(function(h,i){if(!h)hungry.push(i)});
     var i=hungry.length?pick(hungry):Math.floor(Math.random()*3);
     var f=nodes[i].querySelector('.figure');
@@ -253,7 +278,7 @@
     clearTimeout(st.timers[i]);
     setTimeout(function(){
       st.happy[i]=true; nodes[i].classList.add('happy');
-      bubbles[i].textContent=pick(glad);
+      bubbles[i].textContent=label?('کیک خیسِ '+label+' رسید! ممنون!'):pick(glad);
       for(var k=0;k<5;k++) setTimeout(function(){heart(i)},k*140);
       refresh();
     },600);
@@ -262,10 +287,73 @@
       bubbles[i].textContent=pick(sad); refresh();
     },4200);
     refresh();
+  }
+
+  /* ---- date required before every cake ---- */
+  var wd=['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
+  var chosen=null;
+  function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  function nice(d){
+    try{ return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',day:'numeric',month:'long'}).format(d) }
+    catch(e){ return wd[d.getDay()]+' '+iso(d) }
+  }
+  function setDate(d,chipEl){
+    chosen=d; $('when').value=iso(d);
+    $('picked').textContent='روز انتخابی: '+nice(d);
+    $('ok').disabled=false;
+    var cs=document.querySelectorAll('#chips .chip');
+    for(var i=0;i<cs.length;i++) cs[i].classList.toggle('on',cs[i]===chipEl);
+  }
+  function addChip(text,d){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=text;
+    b.addEventListener('click',function(){setDate(d,b)}); $('chips').appendChild(b);
+  }
+  function buildChips(){
+    $('chips').innerHTML='';
+    var t=new Date(); t.setHours(12,0,0,0);
+    function plus(n){var d=new Date(t);d.setDate(d.getDate()+n);return d}
+    addChip('امروز',plus(0)); addChip('فردا',plus(1)); addChip('پس‌فردا',plus(2));
+    [6,0,1,2,3,4,5].forEach(function(day){
+      var n=(day-t.getDay()+7)%7; if(n<3) n+=7;
+      addChip(wd[day],plus(n));
+    });
+  }
+  /* Where each chosen date is sent so the owner sees it. Empty until a relay exists;
+     the bot token must never go in this public page. */
+  var RELAY_URL='';
+  function report(d,label){
+    if(!RELAY_URL) return;
+    var who='';
+    try{ var u=Telegram.WebApp.initDataUnsafe.user; who=u?(u.first_name||u.username||''):'' }catch(e){}
+    try{
+      fetch(RELAY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({date:iso(d),label:label,who:who})}).catch(function(){});
+    }catch(e){}
+  }
+
+  $('feed').addEventListener('click',function(){
+    chosen=null; $('when').value=''; $('picked').textContent=''; $('ok').disabled=true;
+    buildChips(); $('pick').hidden=false;
+  });
+  $('when').addEventListener('input',function(){
+    var v=$('when').value;
+    if(!v){chosen=null;$('ok').disabled=true;$('picked').textContent='';return}
+    setDate(new Date(v+'T12:00:00'),null);
+  });
+  $('ok').addEventListener('click',function(){
+    if(!chosen) return;
+    var label=nice(chosen); $('pick').hidden=true;
+    toast.textContent='کیک خیس برای '+label+' ثبت شد.';
+    doFeed(label);
+    report(chosen,label);
+  });
+  $('cancel').addEventListener('click',function(){
+    $('pick').hidden=true;
+    toast.textContent='بدون تاریخ؟ گربه‌ها گناه دارن آخه...';
   });
 
   /* ---- runaway exit button ---- */
-  var exit=$('exit'), slot=exit.parentNode, toast=$('toast'), feed=$('feed');
+  var exit=$('exit'), slot=exit.parentNode, feed=$('feed');
   var flying=false;
 
   function rects(a,b,pad){return !(a.right+pad<b.left||a.left-pad>b.right||a.bottom+pad<b.top||a.top-pad>b.bottom)}
