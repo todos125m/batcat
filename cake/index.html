@@ -101,7 +101,7 @@
     <h1>بت‌گربه</h1>
     <div class="cancelSlot"><button id="cancel" type="button">✕ لغو</button></div>
   </header>
-  <p id="toast">بت‌گربه پشت سیستمه و خیلی خسته‌ست.</p>
+  <p id="toast">بت‌گربه پشت سیستمه و کم مونده سرش رو بذاره رو کیبورد.</p>
 
   <div class="scene" id="scene">
     <svg id="cat" viewBox="0 0 300 230" xmlns="http://www.w3.org/2000/svg" aria-label="بت‌گربه پشت لپ‌تاپ">
@@ -180,7 +180,7 @@
 
   <div class="ov" id="ov" hidden>
     <div class="ovbox">
-      <p>لغو می‌کنی؟ بت‌گربه ناراحت می‌شه، کیک خیسش هنوز نرسیده...</p>
+      <p>لغو می‌کنی؟ بت‌گربه می‌ره پشت کیبورد گریه می‌کنه... کیک خیسش هنوز نرسیده</p>
       <div class="row">
         <button class="main" id="back" type="button">برمی‌گردم</button>
         <button id="go" type="button">برم</button>
@@ -201,15 +201,16 @@
 
   var lines=[
     {t:'سلام...'},
-    {t:'سلام ملام علیکم'},
-    {t:'من بتمنم. تمام شب گاتهام رو نجات دادم، الان خیلی خسته‌م'},
-    {t:'اینم از سیستم، فقط گزارش می‌نویسم...'},
-    {t:'یه کیک خیس نمی‌دی؟',ask:1},
+    {t:'سلام ملام علیکم، حال شما؟ حال من که خرابه'},
+    {t:'من بتمنم. تمام شب گاتهام رو نجات دادم، جوکر رو سه بار گرفتم، دو بار فرار کرد'},
+    {t:'الان هم دارم گزارشی می‌نویسم که هیچکس نمی‌خونه'},
+    {t:'یه چیزی یادمه: یه بار یه کیک خیس انداختی تو صورت هولسون. قول دادی دیگه نکنی'},
+    {t:'قبول، قول قوله. ولی من گناه دارم، یه کیک خیس بده جبران شه',ask:1},
     {t:'کیک خیس من کو؟ یه کیکم بده، خیلی گناه دارم، آخه آخه؟',ask:1}
   ];
-  var again=['کیک خیس من کو؟','آخه... آخه؟','من گناه دارم آخه، آخه؟','یه کیک واسه من زیاده مگه؟','خسته‌م... کیک خیس...'];
-  var quips=['نه نه، اول کیک بده!','هنوز نه. بت‌گربه نگاه می‌کنه.','دستت کنده!','لغو ممنوع، گاتهام منتظره.','اینجا بمون.','تو سایه‌ها گم شدم.','عدالت لغو نمی‌شه.','تقریباً رسیدی... ولی نه.','فکر کردی؟','آخرین بار بود، قول می‌دم.'];
-  var glad=['خیسه! ممنون!','به رابین نگو که کیک خوردم','دمت گرم، کیک خیس','حتی بتمن هم کیک می‌خواد'];
+  var again=['کیک خیس من کو؟ آلفرد هم نداره','آخه... آخه؟','من گناه دارم آخه، آخه؟','یه کیک واسه من زیاده مگه؟ برای جوکر زیاد بود؟','آلفرد گفت از تو بخوام. تو هم نداری؟','دارم از گرسنگی ماسکم شل می‌شه','خسته‌م... کیک خیس...'];
+  var quips=['نه نه، اول کیک بده!','لغو؟ من لغو نمی‌شم، من بتمنم.','دستت کنده! حتی جوکر هم سریع‌تر می‌گیره.','گاتهام منتظره، تو می‌خوای بری؟','اینجا بمون. من گناه دارم.','تو سایه‌ها گم شدم.','عدالت لغو نمی‌شه.','آلفرد گفت اجازه نده!','فکر کردی؟ شب‌ها شغلم همینه.','آخرین بار بود، قول می‌دم. قول بتمنی.'];
+  var glad=['خیسه! بهترین کیک این ماه، بعد از کیک هولسون','به رابین نگو که کیک خوردم','دمت گرم! ماسکم دوباره سفت شد','حتی بتمن هم کیک می‌خواد، حتی خیسش','آلفرد: «آقا کیک؟!» من: «ساکت»'];
 
   function $(id){return document.getElementById(id)}
   function fa(n){return String(n).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d]})}
@@ -339,7 +340,7 @@
   }
 
   function ownerText(d,who){
-    var s='بت‌گربه کیک خیس می‌خواد.\nروز: '+full(d)+'\nتاریخ: '+fa(jparts(d).y)+'/'+fa(jparts(d).m)+'/'+fa(jparts(d).d);
+    var s='گزارش فوری گاتهام: بت‌گربه کیک خیس سفارش داد.\nروز: '+full(d)+'\nتاریخ: '+fa(jparts(d).y)+'/'+fa(jparts(d).m)+'/'+fa(jparts(d).d);
     if(who) s+='\nاز طرف: '+who;
     return s;
   }
@@ -375,9 +376,9 @@
     if(!chosen) return;
     var d=chosen; $('pick').hidden=true;
     cakeDrop(); happyNow=true; cat.classList.add('happy'); hearts();
-    toast.textContent='کیک خیس برای '+full(d)+' ثبت شد.';
+    toast.textContent='کیک خیس برای '+full(d)+' ثبت شد. بت‌گربه قول می‌ده نندازه تو صورت کسی.';
     addMsg(pick(glad),0);
-    setTimeout(function(){ happyNow=false; cat.classList.remove('happy'); addMsg('یکی دیگه هم بده...',1) },4500);
+    setTimeout(function(){ happyNow=false; cat.classList.remove('happy'); addMsg('یکی دیگه هم بده... این بار برای هولسون نه',1) },4500);
     send(d);
   });
 
@@ -400,7 +401,7 @@
     cancel.style.left=best.x+'px'; cancel.style.top=best.y+'px';
     var n=MAX-left+1; left--;
     toast.textContent='فرار '+fa(n)+' از '+fa(MAX)+': '+quips[n-1];
-    if(left===0){ cancel.classList.add('calm'); toast.textContent='باشه دیگه فرار نمی‌کنم. می‌خوای بت‌گربه رو ول کنی؟' }
+    if(left===0){ cancel.classList.add('calm'); toast.textContent='باشه، خسته شدم، دیگه فرار نمی‌کنم. می‌خوای واقعاً بت‌گربه رو ول کنی؟' }
   }
   cancel.addEventListener('pointerenter',function(e){ if(e.pointerType==='mouse') flee() });
   cancel.addEventListener('pointerdown',function(e){ if(left>0){ e.preventDefault(); flee() } });
